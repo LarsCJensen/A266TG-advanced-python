@@ -35,9 +35,10 @@ def choose_countries():
         if country == "END":
             # Exit loop
             break
+        # TODO Try/Except
         if country in df_regions.values:
             # Extract the country code and append it to the list. It will be matched
-            # against the entires in the cpi file
+            # against the entries in the cpi file
             # TODO is there a better way?
             countries[country] = df_regions[df_regions["Land"] == country][
                 "Landskod"
@@ -396,38 +397,111 @@ def _print_highest_value_row(highest_values):
         # If the country name is too long, truncate it
         print(
             "{:3}".format(" ")
-            + "{:21}".format(
+            + "{:23}".format(
                 value["name"][:20] + ".." if len(value["name"]) > 22 else value["name"]
             )
-            + "{:8.1f}".format(value["value"])
+            + "{:<8.1f}".format(value["value"])
             + "{:11}".format(value["year"])
         )
 
 
-def _print_lowest_value_row(country, inflation_value, year):
-    pass
+def _print_lowest_value_row(lowest_values):
+    for value in lowest_values:
+        # If the country name is too long, truncate it
+        print(
+            "{:3}".format(" ")
+            + "{:23}".format(
+                value["name"][:20] + ".." if len(value["name"]) > 22 else value["name"]
+            )
+            + "{:<8}".format(" ")
+            + "{:11}".format(" ")
+            + "{:<8.1f}".format(value["value"])
+            + "{:11}".format(value["year"])
+        )
 
 
 def print_regional_inflation_values(regional_inflation_values):
     for region in regional_inflation_values:
         _print_region_row(region["name"], region["mean"])
         _print_highest_value_row(region["highest"])
-        _print_lowest_value_row(region)
+        _print_lowest_value_row(region["lowest"])
 
 
-regional_inflation_values = get_region_inflation_values()
+# regional_inflation_values = get_region_inflation_values()
 
-print_header()
-print_regional_inflation_values(regional_inflation_values)
+# print_header()
+# print_regional_inflation_values(regional_inflation_values)
 
 
 # ------------------------------------------------------------------------------------------------------------------------
 # Uppgift 5
 # ------------------------------------------------------------------------------------------------------------------------
 # Skriv din kod här:
+# TODO TA BORT
+# Skapa ett program där man först väljer ett land (COUNTRY) och därefter ett av de möjliga
+# alternativen kolumnerna 'SUBJECT', 'FREQUENCY' och 'MEASURE' och därefter plottar inflationen
+# under åren 1956–2023 i en linjediagram. De fem (5) år under tidsperioden som hade minst-,
+# respektive högst inflation ska visas i grafen som fyllda cirklar. Diagrammet ska skapas med modulen
+# matplotlib. En körning av programmet ska se ut enligt nedan. Observera att värdena i grafen kan
+# vara exempelvärden och inte de korrekta.
 
 
-# ------------------------------------------------------------------------------------------------------------------------
-# Uppgift 6
-# ------------------------------------------------------------------------------------------------------------------------
-# Skriv din kod här:
+def choose_country():
+    while True:
+        country = input("Ange vilket land du vill analysera: ")
+        try:
+            country_code = df_regions[df_regions["Land"] == country][
+                "Landskod"
+            ].to_list()[0]
+        except IndexError:
+            print("Landet kunde inte hittas, försök igen!")
+        else:
+            return country_code
+
+
+def choose_subject():
+    allowed_subjects = ["FOOD", "ENRG", "TOT", "TOT_FOODENRG"]
+    while True:
+        subject = input(
+            f"Ange vilket subject ({', '.join(allowed_subjects)}) du vill analysera: "
+        )
+        if subject not in allowed_subjects:
+            print(
+                f"Subject {subject} är inte tillåtet. Välj bland: {', '.join(allowed_subjects)}!"
+            )
+        else:
+            return subject
+
+
+def choose_frequency():
+    allowed_frequency = ["A", "M", "Q"]
+    while True:
+        frequency = input(
+            f"Ange vilken frekvens ({', '.join(allowed_frequency)}) du vill analysera: "
+        )
+        if frequency not in allowed_frequency:
+            print(
+                f"Subject {frequency} är inte tillåtet. Välj bland: {', '.join(allowed_frequency)}!"
+            )
+        else:
+            return frequency
+
+
+def choose_measure():
+    allowed_measure = ["ARGWTH", "IDX2015"]
+    while True:
+        measure = input(
+            f"Ange vilken frekvens ({', '.join(allowed_measure)}) du vill analysera: "
+        )
+        if subject not in allowed_measure:
+            print(
+                f"Subject {measure} är inte tillåtet. Välj bland: {', '.join(allowed_measure)}!"
+            )
+        else:
+            return frequency
+
+
+location = choose_country()
+subject = choose_subject()
+frequency = choose_frequency()
+measure = choose_measure()
