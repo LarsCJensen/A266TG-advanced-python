@@ -162,6 +162,25 @@ def plot_change_factor(country, country_code):
 # inte rapporterat inflationen för året i fråga.
 
 
+def _get_country_name_from_code(country_code):
+    """
+    Helper function to get country name from country code.
+    Returns country code if not found
+    """
+    try:
+        country_name = df_regions[df_regions["Landskod"] == country_code]["Land"].iloc[
+            0
+        ]
+    except IndexError:
+        print(
+            f"Country name for country code {country_code} could not be found. "
+            "Using country code instead."
+        )
+        country_name = country_code
+
+    return country_name
+
+
 def choose_year():
     while True:
         year = input("Select a year to show inflation numbers for: ")
@@ -183,9 +202,10 @@ def get_inflation_values_for_year(year, number_of_values):
 
 
 def print_inflation_values(year, inflation_values):
-    print("=" * 100)
-    print("LÄNDER MED HÖGST OCH LÄGST INFLATION")
-    print("{:^100}".format(f"ÅR {year}"))
+    print("=" * 138)
+    print("L Ä N D E R  M E D  H Ö G S T  O C H  L Ä G S T  I N F L A T I O N")
+    # TODO How does this work with year?
+    print("{:^100}".format(f"Å R {' '.append(year)}"))
     print("-" * 138)
     print("{:>20}".format("Lägst") + "{:>50}".format("Högst"))
     print("{:>20}".format("-" * 5) + "{:>50}".format("-" * 5))
@@ -206,24 +226,11 @@ def print_inflation_values(year, inflation_values):
     for i in range(print_step_value):
         country_code = inflation_values.index[i]
         inflation_value = inflation_values.iloc[i]
-        country_name = df_regions[df_regions["Landskod"] == country_code]["Land"]
-        # If country name couldn't be found for the country code, use that instead.
-        if country_name.size == 0:
-            print(
-                f"""Country name for country code {country_code}
-                    could not be found. Using country code instead."""
-            )
-            country_name = country_code
+        country_name = _get_country_name_from_code(country_code)
         # Print lowest and highest on the same row according to the assignment spec
         country_code2 = inflation_values.index[i + print_step_value]
         inflation_value2 = inflation_values.iloc[i + print_step_value]
-        country_name2 = df_regions[df_regions["Landskod"] == country_code2]["Land"]
-        if country_name2.size == 0:
-            print(
-                f"""Country name for country code {country_code2}
-                    could not be found. Using country code instead."""
-            )
-            country_name2 = country_code
+        country_name2 = _get_country_name_from_code(country_code2)
         # TODO Ta bort ">"
         print(
             "<{:30}>".format(country_name.array[0])
@@ -241,13 +248,8 @@ def plot_inflation_values(year, inflation_values):
     countries_list = []
     for country_code in inflation_values.index:
         # Get country name from df_regions based on country code
-        country_name = df_regions[df_regions["Landskod"] == country_code]["Land"]
-        if country_name.size == 0:
-            print(
-                f"""Country name for country code {country_code}
-                    could not be found. Using country code instead."""
-            )
-            country_name = country_code
+        country_name = _get_country_name_from_code(country_code)
+
         countries_list.append(country_name.array[0])
 
     plt.bar(countries_list, inflation_values.values.tolist())
@@ -273,27 +275,150 @@ def plot_inflation_values(year, inflation_values):
 # uppmättes.
 
 
+# TODO Refactor to one function
+def _get_lowest_region_values(region_values):
+    """
+    Helper function to get the three lowest region values
+    """
+    # Stack values to be able to sort the series
+    sorted_values = region_values.stack().sort_values()
+    # The values are sorted in ascending order, so get the three top ones
+    lowest_values = sorted_values[:3]
+    return_values = []
+    for index, value in lowest_values.items():
+        # Unpack the tuple
+        country_code, year = index
+        country_name = _get_country_name_from_code(country_code)
+        return_values.append(
+            {
+                "name": country_name,
+                "value": value,
+                "year": year,
+            }
+        )
+    return return_values
+
+
+def _get_highest_region_values(region_values):
+    """
+    Helper function to get the three highest region values
+    """
+    # Stack values to be able to sort the series
+    sorted_values = region_values.stack().sort_values()
+    # The values are sorted in ascending order, so get the three bottom ones
+    highest_values = sorted_values[-3:]
+    return_values = []
+    # I want to traverse the items in reverse order to get the highest value first
+    for index, value in highest_values.iloc[::-1].items():
+        # Unpack the tuple
+        country_code, year = index
+        country_name = _get_country_name_from_code(country_code)
+        return_values.append(
+            {
+                "name": country_name,
+                "value": value,
+                "year": year,
+            }
+        )
+    return return_values
+
+
+def _get_region_inflation_values_mean(region_values):
+    """
+    Helper function to get the mean value of all inflation values for a region
+    """
+    # First we flatten the list to be able to use the mean function
+    region_values_flat = region_values.values.flatten()
+    # We don't want to use the NaN values in the calculation
+    region_values_without_nan = region_values_flat[~pd.isna(region_values_flat)]
+    return region_values_without_nan.mean()
+
+
 def get_region_inflation_values():
     # Gruppera values per region
     # I utskriften ta de tre högsta och tre lägsta samt medel
     region_group = df_regions.groupby(["Kontinent"])
+    regions = []
     for region_name, group in region_group:
-        print(region_name)
-        print(group)
+        region = {}
+        region["name"] = region_name[0]
         region_values = df_cpi[df_cpi.index.isin(group["Landskod"])]
-    # Första kolumnen
-    test = df_cpi.iloc[:, :0]
+
+        lowest_region_values = _get_lowest_region_values(region_values)
+        highest_region_values = _get_highest_region_values(region_values)
+        region_values_mean = _get_region_inflation_values_mean(
+            region_values=region_values
+        )
+        region["mean"] = region_values_mean
+        region["highest"] = highest_region_values
+        region["lowest"] = lowest_region_values
+        regions.append(region)
+
+    return regions
+
+
+def print_header():
+    print("=" * 75)
+    print(" " * 75)
+    print(
+        "{:^75}".format(
+            "O L I K A   K O N T I N E N T E R S   I N F L A T I O N   U N D E R"
+        )
+    )
+    print("{:^75}".format("T I D S P E R I O D E N   1 9 6 0   --   2 0 2 2"))
+    print(" " * 75)
+    print("-" * 75)
+    print(
+        "{:>26}".format(" ")
+        + "{:19}".format("Högst")
+        + "{:14}".format("Lägst")
+        + "{:16}".format("Medel 1960-2022")
+    )
+    print(
+        "{:37}".format("Kontinent/\nLand")
+        + "{:8}".format("Inf [%]")
+        + "{:11}".format("År")
+        + "{:8}".format("Inf [%]")
+        + "{:6}".format("År")
+        + "{:16}".format("Inf [%]")
+    )
+    print("-" * 75)
+
+
+def _print_region_row(region, mean_inflation_value):
+    print(
+        "{:59}".format(region) + "{:8}".format("{:<10.1f}".format(mean_inflation_value))
+    )
+
+
+def _print_highest_value_row(highest_values):
+    for value in highest_values:
+        # If the country name is too long, truncate it
+        print(
+            "{:3}".format(" ")
+            + "{:21}".format(
+                value["name"][:20] + ".." if len(value["name"]) > 22 else value["name"]
+            )
+            + "{:8.1f}".format(value["value"])
+            + "{:11}".format(value["year"])
+        )
+
+
+def _print_lowest_value_row(country, inflation_value, year):
     pass
 
 
-def plot_header():
-    pass
+def print_regional_inflation_values(regional_inflation_values):
+    for region in regional_inflation_values:
+        _print_region_row(region["name"], region["mean"])
+        _print_highest_value_row(region["highest"])
+        _print_lowest_value_row(region)
 
 
-region_inflation_values = get_region_inflation_values()
+regional_inflation_values = get_region_inflation_values()
 
-plot_header()
-plot_regional_inflation_values()
+print_header()
+print_regional_inflation_values(regional_inflation_values)
 
 
 # ------------------------------------------------------------------------------------------------------------------------
