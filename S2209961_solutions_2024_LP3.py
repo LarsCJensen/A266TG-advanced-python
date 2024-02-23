@@ -1,6 +1,5 @@
 import matplotlib.pyplot as plt
 import pandas as pd
-import typing
 
 # ------------------------------------------------------------------------------------------------------------------------
 # Uppgift 1
@@ -9,158 +8,32 @@ import typing
 
 # Add Landskod as index to make it easy to find values for countries
 df_cpi = pd.read_csv(r"data/cpi.csv", delimiter=";", index_col="Landskod")
-# TODO Should landskod be indexed?
 df_regions = pd.read_csv(r"data/regions.csv", delimiter=";")
 df_inflation = pd.read_csv(r"data/inflation.csv")
 
 
 # ------------------------------------------------------------------------------------------------------------------------
-# Uppgift 2
+# General helper functions
 # ------------------------------------------------------------------------------------------------------------------------
-# Skriv din kod här:
-# A
+def _get_country_code_from_name(country_name):
+    """
+    Helper function to get country code from country name. Is case insensitive
+    Returns countrycode and correct country name.
+    Returns empty string if not found
+    """
 
+    countries_lower = df_regions["Land"].str.lower().values
+    if country_name.lower() in countries_lower:
+        # Extract the country code using lower case to mate it case insensitive
+        country_name = df_regions[
+            df_regions["Land"].str.lower() == country_name.lower()
+        ]["Land"].to_list()[0]
+        country_code = df_regions[
+            df_regions["Land"].str.lower() == country_name.lower()
+        ]["Landskod"].to_list()[0]
+        return country_name, country_code
 
-def choose_countries():
-    max_countries = 3
-    countries = {}
-    # Only allow up to three countries to be added to the list or break loop if
-    # user inputs "END"
-    i = 0
-    while i < max_countries:
-        # TODO Perhaps case insensitive
-        country = input(
-            "Write a country to show inflation for or exit using command 'END': "
-        )
-        if country == "END":
-            # Exit loop
-            break
-        # TODO Try/Except
-        if country in df_regions.values:
-            # Extract the country code and append it to the list. It will be matched
-            # against the entries in the cpi file
-            # TODO is there a better way?
-            countries[country] = df_regions[df_regions["Land"] == country][
-                "Landskod"
-            ].to_list()[0]
-            # Only increment the counter when a valid country is chosen
-            i += 1
-        else:
-            print(f"Country {country} does not exist in the data, please try again")
-    return countries
-
-
-def plot_countries(countries):
-    plt.title("Årlig inflationstakt under åren 1960-2022")
-    plt.xlabel("År")
-    # Rotate the X values (years) to fit
-    plt.xticks(rotation=90)
-    plt.ylabel("Inflationstakt [%]")
-    plt.grid()
-
-    for country, country_code in countries.items():
-        # Get columns with years for x-lim
-        # years = df_cpi.columns[1:]
-        years = df_cpi.columns
-        # Extract yearly values for country
-        # TODO Kolla
-        # cpi_values = df_cpi[df_cpi["Landskod"] == country_code].iloc[:1, 1:].values[0]
-        cpi_values = df_cpi.loc[country_code]
-        # Get max and min values and which year they belong to
-        cpi_max = cpi_values.max()
-        cpi_max_year = years[cpi_values.argmax()]
-        cpi_min = cpi_values.min()
-        cpi_min_year = years[cpi_values.argmin()]
-        plt.plot(years, cpi_values, label=f"{country}")
-        # Create circles for the max and min
-        # TODO Gör snyggare
-        max_circle = plt.Circle((cpi_max_year, cpi_max), 0.1, color="r")
-        min_circle = plt.Circle((cpi_min_year, cpi_min), 0.1, color="b")
-        # Get current axis and add circles to it as patch
-        plt.gca().add_patch(max_circle)
-        plt.gca().add_patch(min_circle)
-
-    plt.legend()
-    plt.show()
-
-
-# countries = choose_countries()
-# plot_countries(countries)
-
-
-# 2B
-
-
-def choose_country():
-    while True:
-        # TODO Perhaps case insensitive
-        country = input("Write a country to show change factor for: ")
-        if country in df_regions.values:
-            # Extract the country code and append it to the list. It will be matched
-            # against the entires in the cpi file
-            # TODO is there a better way?
-            country_code = df_regions[df_regions["Land"] == country][
-                "Landskod"
-            ].to_list()[0]
-            break
-        else:
-            print(f"Country {country} does not exist in the data, please try again")
-    return country, country_code
-
-
-# Helper method to calculate change factor
-def _get_change_factor(this_month, prev_month):
-    # Return in percent
-    return ((this_month - prev_month) / prev_month) * 100
-
-
-def _get_change_factor_values(cpi_values):
-    prev_val = 0
-    change_factor_values = []
-    for i in range(cpi_values.size):
-        if i == 0:
-            # If i == 0 then we are at the first month, so no diff can be calculated
-            prev_val = cpi_values[i]
-            # Add value of 0 to keep length of values the same as number of years
-            change_factor_values.append(0)
-            continue
-        change_factor_values.append(_get_change_factor(cpi_values[i], prev_val))
-        prev_val = cpi_values[i]
-    return change_factor_values
-
-
-def plot_change_factor(country, country_code):
-    # TODO Gör generell
-    plt.title(
-        f"{country} - förändring av inflation i förhållande till föregående år (1960-2022)"
-    )
-    plt.xlabel("År")
-    # Rotate the X values (years) to fit
-    plt.xticks(rotation=90)
-    plt.ylabel("Inflationstakt [%]")
-    plt.grid()
-
-    years = df_cpi.columns
-    # cpi_values = df_cpi[df_cpi["Landskod"] == country_code].iloc[:1, 1:].values[0]
-    cpi_values = df_cpi.loc[country_code]
-    change_factor_values = _get_change_factor_values(cpi_values)
-    plt.bar(years, change_factor_values, label=f"{country}")
-    plt.show()
-
-
-# country, country_code = choose_country()
-# plot_change_factor(country, country_code)
-
-# ------------------------------------------------------------------------------------------------------------------------
-# Uppgift 3
-# ------------------------------------------------------------------------------------------------------------------------
-# Skriv din kod här:
-
-# TODO TA BORT
-# Skriv ett program där man först anger årtalet som ska analyseras och därefter beräknar programmet
-# de 6 länder som hade lägst respektive högst inflation för året ifråga. Informationen ska presenteras i
-# tabellform och i ett stapeldiagram enligt nedansteånde utseenden. Vi bortser från de länder som
-# inte rapporterat inflationen för året i fråga.
+    return "", ""
 
 
 def _get_country_name_from_code(country_code):
@@ -182,6 +55,142 @@ def _get_country_name_from_code(country_code):
     return country_name
 
 
+# ------------------------------------------------------------------------------------------------------------------------
+# Uppgift 2
+# ------------------------------------------------------------------------------------------------------------------------
+# Skriv din kod här:
+# A
+
+
+def choose_countries():
+    max_countries = 3
+    countries = {}
+    # Only allow up to three countries to be added to the list or break loop if
+    # user inputs "END"
+    i = 0
+    while i < max_countries:
+        country = input(
+            "Write a country to show inflation for or exit using command 'END': "
+        )
+        if country == "END":
+            # Exit loop
+            break
+        country_name, country_code = _get_country_code_from_name(country)
+        if country_name:
+            countries[country_name] = country_code
+            # Only increment the counter when a valid country is chosen
+            i += 1
+        else:
+            print(f"Country '{country}' does not exist in the data, please try again")
+    return countries
+
+
+def plot_countries(countries):
+    plt.title("Årlig inflationstakt under åren 1960-2022")
+    plt.xlabel("År")
+    # Rotate the X values (years) to fit
+    plt.xticks(rotation=90)
+    plt.ylabel("Inflationstakt [%]")
+    plt.grid()
+    # Make the axises have equal amount of pixels so the circles become round
+    plt.axis("equal")
+    for country, country_code in countries.items():
+        # Get columns with years for x-lim
+        years = df_cpi.columns
+        # Extract yearly values for country
+        cpi_values = df_cpi.loc[country_code]
+        # Get max and min values and which year they belong to
+        cpi_max = cpi_values.max()
+        cpi_max_year = years[cpi_values.argmax()]
+        cpi_min = cpi_values.min()
+        cpi_min_year = years[cpi_values.argmin()]
+        plt.plot(years, cpi_values, label=f"{country}")
+        # Create circles for the max and min
+        max_circle = plt.Circle((cpi_max_year, cpi_max), 0.2, color="r")
+        min_circle = plt.Circle((cpi_min_year, cpi_min), 0.2, color="b")
+        # Get current axis and add circles to it as patch
+        plt.gca().add_patch(max_circle)
+        plt.gca().add_patch(min_circle)
+
+    plt.legend()
+    plt.show()
+
+
+# TODO Uncomment
+# countries = choose_countries()
+# if len(countries) > 0:
+#     plot_countries(countries)
+# else:
+#     print("No values to plot")
+
+
+# 2B
+
+
+def choose_country():
+    while True:
+        country = input("Write a country to show change factor for: ")
+        country_name, country_code = _get_country_code_from_name(country)
+        if not country_name:
+            print(f"Country '{country}' does not exist in the data, please try again")
+        else:
+            break
+    return country_name, country_code
+
+
+def _get_change_factor(this_month, prev_month):
+    """
+    Helper function to calculate change factor
+    Return as percent
+    """
+    return ((this_month - prev_month) / prev_month) * 100
+
+
+def _get_change_factor_values(cpi_values):
+    """
+    Helper function to get the change factor values
+    """
+    prev_val = 0
+    change_factor_values = []
+    for i in range(cpi_values.size):
+        if i == 0:
+            # If i == 0 then we are at the first month, so no diff can be calculated
+            prev_val = cpi_values[i]
+            # Add value of 0 to keep length of values the same as number of years
+            change_factor_values.append(0)
+            continue
+        change_factor_values.append(_get_change_factor(cpi_values[i], prev_val))
+        prev_val = cpi_values[i]
+    return change_factor_values
+
+
+def plot_change_factor(country, country_code):
+    plt.title(
+        f"{country} - förändring av inflation i förhållande till föregående år (1960-2022)"
+    )
+    plt.xlabel("År")
+    # Rotate the X values (years) to fit
+    plt.xticks(rotation=90)
+    plt.ylabel("Inflationstakt [%]")
+    plt.grid()
+
+    years = df_cpi.columns
+    cpi_values = df_cpi.loc[country_code]
+    change_factor_values = _get_change_factor_values(cpi_values)
+    plt.bar(years, change_factor_values, label=f"{country}")
+    plt.show()
+
+
+# TODO Uncomment
+# country, country_code = choose_country()
+# plot_change_factor(country, country_code)
+
+# ------------------------------------------------------------------------------------------------------------------------
+# Uppgift 3
+# ------------------------------------------------------------------------------------------------------------------------
+# Skriv din kod här:
+
+
 def choose_year():
     while True:
         year = input("Select a year to show inflation numbers for: ")
@@ -193,10 +202,12 @@ def choose_year():
 
 
 def get_inflation_values_for_year(year, number_of_values):
-    # Get inflation values exluding the ones with NaN values
+    # Get inflation values exluding the ones with NaN values and sort the values
     inflation_values = df_cpi[year].dropna().sort_values()
-    # sort values
+
+    # The highest values is in the bottom of the list
     highest_inflation_values = inflation_values[-number_of_values:]
+    # The lowest values is in the top of the list
     lowest_inflation_values = inflation_values[:number_of_values]
     # Create name + inflation DataFrame and sort according to inflation
     return pd.concat([highest_inflation_values, lowest_inflation_values]).sort_values()
@@ -204,26 +215,26 @@ def get_inflation_values_for_year(year, number_of_values):
 
 def print_inflation_values(year, inflation_values):
     print("=" * 138)
-    print("L Ä N D E R  M E D  H Ö G S T  O C H  L Ä G S T  I N F L A T I O N")
-    # TODO How does this work with year?
-    print("{:^100}".format(f"Å R {' '.append(year)}"))
+    print(
+        "{:^100}".format(
+            "L Ä N D E R  M E D  H Ö G S T  O C H  L Ä G S T  I N F L A T I O N"
+        )
+    )
+    print("{:^100}".format(f"Å R  {' '.join(year)}"))
     print("-" * 138)
     print("{:>20}".format("Lägst") + "{:>50}".format("Högst"))
     print("{:>20}".format("-" * 5) + "{:>50}".format("-" * 5))
     # PRINT full country name
     print(
-        "<{:30}>".format("Land")
-        + "<{:^20}>".format("Inflation [%]")
-        + "<{:50}>".format("Land")
-        + "<{:^20}>".format("Inflation [%]")
+        "{:30}".format("Land")
+        + "{:^20}".format("Inflation [%]")
+        + "{:50}".format("Land")
+        + "{:^20}".format("Inflation [%]")
     )
     print("-" * 138)
-    # Loop over items to get country-code and value
-    # TODO SKapa array av strängar att loopa över
-    str_array = []
-    # for country_code, value in inflation_values.items():
     # Use this value to offset the print mechanism
     print_step_value = int(inflation_values.size / 2)
+    # Loop over items to get country-code and value
     for i in range(print_step_value):
         country_code = inflation_values.index[i]
         inflation_value = inflation_values.iloc[i]
@@ -232,12 +243,14 @@ def print_inflation_values(year, inflation_values):
         country_code2 = inflation_values.index[i + print_step_value]
         inflation_value2 = inflation_values.iloc[i + print_step_value]
         country_name2 = _get_country_name_from_code(country_code2)
-        # TODO Ta bort ">"
+        # Format inflation values with one decimal
         print(
-            "<{:30}>".format(country_name.array[0])
-            + "<{:^20.1f}>".format(inflation_value)
-            + "<{:50}>".format(country_name2.array[0])
-            + "<{:^20.1f}>".format(inflation_value2)
+            "{:30}".format(
+                country_name[:28] + ".." if len(country_name) > 30 else country_name
+            )
+            + "{:^20.1f}".format(inflation_value)
+            + "{:50}".format(country_name2)
+            + "{:^20.1f}".format(inflation_value2)
         )
 
 
@@ -251,29 +264,22 @@ def plot_inflation_values(year, inflation_values):
         # Get country name from df_regions based on country code
         country_name = _get_country_name_from_code(country_code)
 
-        countries_list.append(country_name.array[0])
-
+        countries_list.append(country_name)
+    plt.xticks(rotation=15)
     plt.bar(countries_list, inflation_values.values.tolist())
     plt.show()
 
 
+# TODO Uncomment
 # year = choose_year()
 # inflation_values = get_inflation_values_for_year(year=year, number_of_values=6)
 # print_inflation_values(year=year, inflation_values=inflation_values)
 # plot_inflation_values(year=year, inflation_values=inflation_values)
-# print("Done")
 
 # ------------------------------------------------------------------------------------------------------------------------
 # Uppgift 4
 # ------------------------------------------------------------------------------------------------------------------------
 # Skriv din kod här:
-# TODO TA BORT
-# I denna uppgift ska du analysera inflationen som har uppmätts per kontinent under tidsperioden
-# 1960-2022 enligt den uppdelning som finns i kolumnen Kontinent i df_region.
-# Skriv ett program som använder informationen i df_cpi och df_region och som skapar en tabell som dels presenterar
-# medelinflationen per kontinent under tidsperioden 1960-2022 samt de 3 högsta- och de 3 lägsta
-# förekommande inflationerna per kontinent under tidsperioden och i vilka länder dessa inflationer
-# uppmättes.
 
 
 # TODO Refactor to one function
@@ -427,8 +433,8 @@ def print_regional_inflation_values(regional_inflation_values):
         _print_lowest_value_row(region["lowest"])
 
 
+# TODO Uncomment
 # regional_inflation_values = get_region_inflation_values()
-
 # print_header()
 # print_regional_inflation_values(regional_inflation_values)
 
@@ -437,26 +443,21 @@ def print_regional_inflation_values(regional_inflation_values):
 # Uppgift 5
 # ------------------------------------------------------------------------------------------------------------------------
 # Skriv din kod här:
-# TODO TA BORT
-# Skapa ett program där man först väljer ett land (COUNTRY) och därefter ett av de möjliga
-# alternativen kolumnerna 'SUBJECT', 'FREQUENCY' och 'MEASURE' och därefter plottar inflationen
-# under åren 1956–2023 i en linjediagram. De fem (5) år under tidsperioden som hade minst-,
-# respektive högst inflation ska visas i grafen som fyllda cirklar. Diagrammet ska skapas med modulen
-# matplotlib. En körning av programmet ska se ut enligt nedan. Observera att värdena i grafen kan
-# vara exempelvärden och inte de korrekta.
 
 
 def choose_country():
     while True:
         country = input("Ange vilket land du vill analysera: ")
+        # Use try/except in this case to show that it is a possible solution
+        # Preffered would probably be to use the helper function _get_country_code_from_name
         try:
             country_code = df_regions[df_regions["Land"] == country][
                 "Landskod"
             ].to_list()[0]
         except IndexError:
-            print("Landet kunde inte hittas, försök igen!")
+            print(f"Landet {country} kunde inte hittas, försök igen!")
         else:
-            return country_code
+            return country, country_code
 
 
 def choose_subject():
@@ -481,27 +482,113 @@ def choose_frequency():
         )
         if frequency not in allowed_frequency:
             print(
-                f"Subject {frequency} är inte tillåtet. Välj bland: {', '.join(allowed_frequency)}!"
+                f"Frekvens {frequency} är inte tillåten. Välj bland: {', '.join(allowed_frequency)}!"
             )
         else:
             return frequency
 
 
 def choose_measure():
-    allowed_measure = ["ARGWTH", "IDX2015"]
+    allowed_measure = ["AGRWTH", "IDX2015"]
     while True:
         measure = input(
-            f"Ange vilken frekvens ({', '.join(allowed_measure)}) du vill analysera: "
+            f"Ange vilken measure ({', '.join(allowed_measure)}) du vill analysera: "
         )
-        if subject not in allowed_measure:
+        if measure not in allowed_measure:
             print(
-                f"Subject {measure} är inte tillåtet. Välj bland: {', '.join(allowed_measure)}!"
+                f"Measure {measure} är inte tillåtet. Välj bland: {', '.join(allowed_measure)}!"
             )
         else:
-            return frequency
+            return measure
 
 
-location = choose_country()
+def _get_max_min_values(inflation_values):
+    """
+    Helper function to get max and min values
+    """
+    values_to_get = 5
+    max_min_values = []
+    # Get the five lowest values
+    min_values = inflation_values.sort_values(by="Value").head(values_to_get)
+    # Get the five highest values through using descending sort
+    max_values = inflation_values.sort_values(by="Value", ascending=False).head(
+        values_to_get
+    )
+    return pd.concat([min_values, max_values])
+
+
+def plot_inflation_for_country(country, country_code, subject, frequency, measure):
+    # RITA CIRKEL RINT TOPP/BOTTEN-VÄRDEN
+    plt.title(f"Inflation för {country}, {subject}, {frequency} och {measure}")
+    plt.xlabel("År")
+    # Rotate the X values (years) to fit
+    plt.xticks(rotation=30)
+    plt.ylabel("Inflation")
+    plt.grid()
+
+    inflation_filter = (
+        (df_inflation["LOCATION"] == country_code)
+        & (df_inflation["SUBJECT"] == subject)
+        & (df_inflation["FREQUENCY"] == frequency)
+        & (df_inflation["MEASURE"] == measure)
+    )
+    inflation_values = df_inflation.loc[inflation_filter, ["TIME", "Value"]]
+
+    max_min_values = _get_max_min_values(inflation_values)
+    # Add years to a separate varuable for plotting X
+    years = inflation_values.iloc[:, 0:1]
+
+    # Get max and min values and which year they belong to
+    # cpi_max = cpi_values.max()
+    # cpi_max_year = years[cpi_values.argmax()]
+    # cpi_min = cpi_values.min()
+    # cpi_min_year = years[cpi_values.argmin()]
+    plt.plot(years.values.flatten(), inflation_values.iloc[:, 1].values)
+    colors = [
+        "salmon",
+        "red",
+        "blue",
+        "green",
+        "purple",
+        "orange",
+        "yellow",
+        "darkblue",
+        "pink",
+        "black",
+        "brown",
+    ]
+    # Make the axises have equal amount of pixels so the circles become round
+    # plt.axis("equal")
+    for value in max_min_values.values:
+        # TODO Lägg till "Minsta/Högsta"
+        # TODO Fixa cirkel
+        # Get the year and value from the array
+        circle = plt.Circle(
+            (value[0], value[1]),
+            0.2,
+            color=colors.pop(),
+            label=f"{value[0]}",
+        )
+        # min_circle = plt.Circle((cpi_min_year, cpi_min), 0.1, color="b")
+        # Get current axis and add circles to it as patch
+        plt.gca().add_patch(circle)
+        # plt.gca().add_patch(min_circle)
+
+    plt.legend()
+
+    plt.show()
+
+
+country, country_code = choose_country()
 subject = choose_subject()
 frequency = choose_frequency()
 measure = choose_measure()
+
+plot_inflation_for_country(
+    country=country,
+    country_code=country_code,
+    subject=subject,
+    frequency=frequency,
+    measure=measure,
+)
+print("test")
