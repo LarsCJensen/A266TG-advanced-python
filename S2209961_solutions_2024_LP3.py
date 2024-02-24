@@ -48,8 +48,8 @@ def _get_country_name_from_code(country_code):
         ]
     except IndexError:
         print(
-            f"Country name for country code {country_code} could not be found. "
-            "Using country code instead."
+            f"Namnet för landskoden {country_code} kunde inte hittas. "
+            "Landskoden används istället."
         )
         country_name = country_code
 
@@ -72,7 +72,7 @@ def assignment_2_a():
         i = 0
         while i < max_countries:
             country = input(
-                "Write a country to show inflation for or exit using command 'END': "
+                "Ange namnet på landet som du vill analysera. Avsluta genom kommandot 'END': "
             )
             if country == "END":
                 # Exit loop
@@ -83,9 +83,7 @@ def assignment_2_a():
                 # Only increment the counter when a valid country is chosen
                 i += 1
             else:
-                print(
-                    f"Country '{country}' does not exist in the data, please try again"
-                )
+                print(f"Landet '{country}' finns inte i datan. Försök igen!")
         return countries
 
     def plot_countries(countries):
@@ -122,19 +120,17 @@ def assignment_2_a():
     if len(countries) > 0:
         plot_countries(countries)
     else:
-        print("No values to plot")
+        print("Inga värden att plotta!")
 
 
 # 2B
 def assignment_2_b():
     def choose_country():
         while True:
-            country = input("Write a country to show change factor for: ")
+            country = input("Ange namnet på landet som du vill analysera: ")
             country_name, country_code = _get_country_code_from_name(country)
             if not country_name:
-                print(
-                    f"Country '{country}' does not exist in the data, please try again"
-                )
+                print(f"Landet '{country}' finns inte i datan. Försök igen!")
             else:
                 break
         return country_name, country_code
@@ -194,12 +190,12 @@ def assignment_2_b():
 def assignment_3():
     def choose_year():
         while True:
-            year = input("Select a year to show inflation numbers for: ")
+            year = input("Ange vilket år som ska analyseras: ")
             # We need to make sure that the year is in the columns (excluding "Landskod")
             if year in df_cpi.columns:
                 return year
             else:
-                print(f"Year {year} does not exist in the data, please try again")
+                print(f"Året {year} finns inte i datat. Vänligen försök igen!")
 
     def get_inflation_values_for_year(year, number_of_values):
         # Get inflation values exluding the ones with NaN values and sort the values
@@ -282,17 +278,20 @@ def assignment_3():
 
 
 def assignment_4():
-    # TODO Refactor to one function
-    def _get_lowest_region_values(region_values):
+    def _get_extreme_region_values(region_values, highest=True, num_values=3):
         """
-        Helper function to get the three lowest region values
+        Helper function to get the three lowest or highest region values
         """
         # Stack values to be able to sort the series
         sorted_values = region_values.stack().sort_values()
-        # The values are sorted in ascending order, so get the three top ones
-        lowest_values = sorted_values[:3]
+        # Determine whether to get the highest or lowest values
+        if highest:
+            selected_values = sorted_values[-num_values:]
+        else:
+            selected_values = sorted_values[:num_values]
         return_values = []
-        for index, value in lowest_values.items():
+        # Iterate over the selected values
+        for index, value in selected_values.items():
             # Unpack the tuple
             country_code, year = index
             country_name = _get_country_name_from_code(country_code)
@@ -303,29 +302,9 @@ def assignment_4():
                     "year": year,
                 }
             )
-        return return_values
-
-    def _get_highest_region_values(region_values):
-        """
-        Helper function to get the three highest region values
-        """
-        # Stack values to be able to sort the series
-        sorted_values = region_values.stack().sort_values()
-        # The values are sorted in ascending order, so get the three bottom ones
-        highest_values = sorted_values[-3:]
-        return_values = []
-        # I want to traverse the items in reverse order to get the highest value first
-        for index, value in highest_values.iloc[::-1].items():
-            # Unpack the tuple
-            country_code, year = index
-            country_name = _get_country_name_from_code(country_code)
-            return_values.append(
-                {
-                    "name": country_name,
-                    "value": value,
-                    "year": year,
-                }
-            )
+        # If we are getting highest values, reverse the list
+        if highest:
+            return_values = return_values[::-1]
         return return_values
 
     def _get_region_inflation_values_mean(region_values):
@@ -348,8 +327,10 @@ def assignment_4():
             region["name"] = region_name[0]
             region_values = df_cpi[df_cpi.index.isin(group["Landskod"])]
 
-            lowest_region_values = _get_lowest_region_values(region_values)
-            highest_region_values = _get_highest_region_values(region_values)
+            lowest_region_values = _get_extreme_region_values(
+                region_values, highest=False
+            )
+            highest_region_values = _get_extreme_region_values(region_values)
             region_values_mean = _get_region_inflation_values_mean(
                 region_values=region_values
             )
@@ -549,34 +530,6 @@ def assignemnt_5():
             "black",
             "brown",
         ]
-        # Make the axises have equal amount of pixels so the circles become round
-        # plt.axis("equal")
-        # ax = plt.gca()
-        # width, height = fig.get_size_inches()
-        # aspect_ratio = width / height
-        # max_dim = max(width, height)
-        # width = max_dim / 5
-        # height = max_dim / (5 * aspect_ratio)
-        # x0, y0 = ax.transAxes.transform((0, 0))  # lower left in pixels
-        # x1, y1 = ax.transAxes.transform((1, 1))  # upper right in pixes
-        # dx = x1 - x0
-        # dy = y1 - y0
-
-        # scale = 0.5
-
-        # maxd = max(dx, dy)
-        # width = scale * maxd / dx
-        # height = scale * maxd / dy
-        # print(width, height)
-        # aspect_ratio = dx / dy
-        # # If plot area is wider
-        # if aspect_ratio > 1:
-        #     width = scale / aspect_ratio
-        #     height = scale
-        # # If plot area is wider
-        # else:
-        #     width = scale
-        #     height = scale * aspect_ratio
 
         for i in range(max_min_values.shape[0]):
             year = max_min_values.values[i][0]
@@ -585,13 +538,7 @@ def assignemnt_5():
             # Change value type when we reach highest values
             if i > 4:
                 value_type = "Högsta"
-            # TODO Fixa cirkel
-            # circle = plt.Circle(
-            #     (year, inflation_value),
-            #     0.2,
-            #     color=colors.pop(),
-            #     label=f"{year} {value_type}",
-            # )
+
             # Use scatter to mark the highst/lowest values as circles
             plt.scatter(
                 year,
@@ -600,16 +547,6 @@ def assignemnt_5():
                 color=colors.pop(),
                 label=f"{year} {value_type}",
             )
-            # circle = patches.Ellipse(
-            #     (year, inflation_value),
-            #     width,
-            #     height,
-            #     color=colors.pop(),
-            #     label=f"{year} {value_type}",
-            # )
-            # Get current axis and add circles to it as patch
-            # plt.gca().add_artist(circle)
-            # ax.add_artist(circle)
 
         plt.legend()
 
@@ -647,15 +584,20 @@ if __name__ == "__main__":
         match choice:
             case "1":
                 assignment_2_a()
+                input("Tryck Enter för att fortsätta..")
             case "2":
                 assignment_2_b()
+                input("Tryck Enter för att fortsätta..")
             case "3":
                 assignment_3()
+                input("Tryck Enter för att fortsätta..")
             case "4":
                 assignment_4()
+                input("Tryck Enter för att fortsätta..")
             case "5":
                 assignemnt_5()
+                input("Tryck Enter för att fortsätta..")
             case "6":
                 break
             case _:
-                print(f"{choice} is not a valid option. Please try again")
+                print(f"{choice} är inget giltigt val. Försök igen!")
