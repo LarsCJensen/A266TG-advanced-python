@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
-import matplotlib.patches as patches
 import pandas as pd
+
+# Lars Jensen, A266TG
 
 # ------------------------------------------------------------------------------------------------------------------------
 # Uppgift 1
@@ -8,9 +9,9 @@ import pandas as pd
 # Skriv din kod här:
 
 # Add Landskod as index to make it easy to find values for countries
-df_cpi = pd.read_csv(r"data/cpi.csv", delimiter=";", index_col="Landskod")
-df_regions = pd.read_csv(r"data/regions.csv", delimiter=";")
-df_inflation = pd.read_csv(r"data/inflation.csv")
+df_cpi = pd.read_csv("cpi.csv", delimiter=";", index_col="Landskod")
+df_regions = pd.read_csv("regions.csv", delimiter=";")
+df_inflation = pd.read_csv("inflation.csv")
 
 
 # ------------------------------------------------------------------------------------------------------------------------
@@ -18,7 +19,7 @@ df_inflation = pd.read_csv(r"data/inflation.csv")
 # ------------------------------------------------------------------------------------------------------------------------
 def _get_country_code_from_name(country_name):
     """
-    Helper function to get country code from country name. Is case insensitive
+    Helper function to get country code from country name. It is case insensitive.
     Returns countrycode and correct country name.
     Returns empty string if not found
     """
@@ -34,6 +35,7 @@ def _get_country_code_from_name(country_name):
         ]["Landskod"].to_list()[0]
         return country_name, country_code
 
+    # Return empty strings if country is not found
     return "", ""
 
 
@@ -46,6 +48,7 @@ def _get_country_name_from_code(country_code):
         country_name = df_regions[df_regions["Landskod"] == country_code]["Land"].iloc[
             0
         ]
+    # Catch exception as a precaution if country is not found
     except IndexError:
         print(
             f"Namnet för landskoden {country_code} kunde inte hittas. "
@@ -137,10 +140,9 @@ def assignment_2_b():
 
     def _get_change_factor(this_month, prev_month):
         """
-        Helper function to calculate change factor
-        Return as percent
+        Helper function to calculate change factor and return it
         """
-        return ((this_month - prev_month) / prev_month) * 100
+        return (this_month - prev_month) / prev_month
 
     def _get_change_factor_values(cpi_values):
         """
@@ -154,6 +156,7 @@ def assignment_2_b():
                 prev_val = cpi_values.iloc[i]
                 # Add value of 0 to keep length of values the same as number of years
                 change_factor_values.append(0)
+                # Move to the next iteration
                 continue
             change_factor_values.append(
                 _get_change_factor(cpi_values.iloc[i], prev_val)
@@ -195,12 +198,11 @@ def assignment_3():
             if year in df_cpi.columns:
                 return year
             else:
-                print(f"Året {year} finns inte i datat. Vänligen försök igen!")
+                print(f"Året {year} finns inte i datamängden. Vänligen försök igen!")
 
     def get_inflation_values_for_year(year, number_of_values):
         # Get inflation values exluding the ones with NaN values and sort the values
         inflation_values = df_cpi[year].dropna().sort_values()
-
         # The highest values is in the bottom of the list
         highest_inflation_values = inflation_values[-number_of_values:]
         # The lowest values is in the top of the list
@@ -211,24 +213,24 @@ def assignment_3():
         ).sort_values()
 
     def print_inflation_values(year, inflation_values):
-        print("=" * 138)
+        print("=" * 97)
         print(
             "{:^100}".format(
                 "L Ä N D E R  M E D  H Ö G S T  O C H  L Ä G S T  I N F L A T I O N"
             )
         )
         print("{:^100}".format(f"Å R  {' '.join(year)}"))
-        print("-" * 138)
+        print("-" * 97)
         print("{:>20}".format("Lägst") + "{:>50}".format("Högst"))
         print("{:>20}".format("-" * 5) + "{:>50}".format("-" * 5))
         # PRINT full country name
         print(
             "{:30}".format("Land")
             + "{:^20}".format("Inflation [%]")
-            + "{:50}".format("Land")
+            + "{:30}".format("Land")
             + "{:^20}".format("Inflation [%]")
         )
-        print("-" * 138)
+        print("-" * 97)
         # Use this value to offset the print mechanism
         print_step_value = int(inflation_values.size / 2)
         # Loop over items to get country-code and value
@@ -241,12 +243,17 @@ def assignment_3():
             inflation_value2 = inflation_values.iloc[i + print_step_value]
             country_name2 = _get_country_name_from_code(country_code2)
             # Format inflation values with one decimal
+            # Truncate country_name if too long
             print(
                 "{:30}".format(
                     country_name[:28] + ".." if len(country_name) > 30 else country_name
                 )
                 + "{:^20.1f}".format(inflation_value)
-                + "{:50}".format(country_name2)
+                + "{:30}".format(
+                    country_name2[:28] + ".."
+                    if len(country_name2) > 30
+                    else country_name2
+                )
                 + "{:^20.1f}".format(inflation_value2)
             )
 
@@ -259,7 +266,6 @@ def assignment_3():
         for country_code in inflation_values.index:
             # Get country name from df_regions based on country code
             country_name = _get_country_name_from_code(country_code)
-
             countries_list.append(country_name)
         plt.xticks(rotation=15)
         plt.bar(countries_list, inflation_values.values.tolist())
@@ -280,7 +286,7 @@ def assignment_3():
 def assignment_4():
     def _get_extreme_region_values(region_values, highest=True, num_values=3):
         """
-        Helper function to get the three lowest or highest region values
+        Helper function to get the `num_values number` of lowest or highest region values
         """
         # Stack values to be able to sort the series
         sorted_values = region_values.stack().sort_values()
@@ -295,6 +301,7 @@ def assignment_4():
             # Unpack the tuple
             country_code, year = index
             country_name = _get_country_name_from_code(country_code)
+            # Create the dict with the values and add it to the return list
             return_values.append(
                 {
                     "name": country_name,
@@ -319,7 +326,6 @@ def assignment_4():
 
     def get_region_inflation_values():
         # Gruppera values per region
-        # I utskriften ta de tre högsta och tre lägsta samt medel
         region_group = df_regions.groupby(["Kontinent"])
         regions = []
         for region_name, group in region_group:
@@ -369,12 +375,18 @@ def assignment_4():
         print("-" * 75)
 
     def _print_region_row(region, mean_inflation_value):
+        """
+        Helper function to print region row
+        """
         print(
             "{:59}".format(region)
             + "{:8}".format("{:<10.1f}".format(mean_inflation_value))
         )
 
     def _print_highest_value_row(highest_values):
+        """
+        Helper function to print highest value row which
+        """
         for value in highest_values:
             # If the country name is too long, truncate it
             print(
@@ -389,6 +401,9 @@ def assignment_4():
             )
 
     def _print_lowest_value_row(lowest_values):
+        """
+        Helper function to print lowest value row which
+        """
         for value in lowest_values:
             # If the country name is too long, truncate it
             print(
