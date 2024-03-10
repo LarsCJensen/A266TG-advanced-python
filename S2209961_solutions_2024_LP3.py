@@ -142,7 +142,7 @@ def assignment_2_b():
         """
         Helper function to calculate change factor and return it
         """
-        return (this_month - prev_month) / prev_month
+        return ((this_month - prev_month) / prev_month) * 100
 
     def _get_change_factor_values(cpi_values):
         """
